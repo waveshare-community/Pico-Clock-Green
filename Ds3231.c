@@ -44,7 +44,6 @@ void ByteData()
 
 void init_DS3231()
 {
-    unsigned char i;
     uint8_t val[2];
     val[0] = DS3231_REG_CONTROL;
     val[1] = Control_default;

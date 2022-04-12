@@ -645,6 +645,7 @@ void Show_Time() //显示时间
         }
         else if(Set_hour_temp == 12)
         {
+            hour_temp = 12;
             dis_PM;
             dis_AM_close;
         }
@@ -1318,11 +1319,13 @@ void Timing_set(uint8_t UP_DOWN_flag)
 			}
 			else if(Set_hour_temp == 12)
 			{
+                hour_temp = 12;
 				dis_PM;
 				dis_AM_close;
 			}
 			else
 			{
+                hour_temp = Set_hour_temp;
 				dis_AM;
 				dis_PM_close;
 			}
@@ -1354,7 +1357,7 @@ void Time_set(uint8_t UP_DOWN_flag)
 			}
 			else if(Set_hour_temp == 12)
 			{
-				hour_temp = Set_hour_temp;
+				hour_temp = 12;
 				dis_PM;
 				dis_AM_close;
 			}
