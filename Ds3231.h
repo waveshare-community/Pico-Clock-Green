@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by yufu on 2021/1/25.
 //
 
@@ -30,8 +30,9 @@
 #define DS3231_STA_A1F          0x01
 #define DS3231_STA_A2F          0x02
 #define	Control_default	        0x20
-//启动定时器，关闭电池供电方波使能，强制启动温度转换，SQW引脚输出1Hz方波，关闭闹钟中断使能
-#define	Status_default		0x00	//关闭32.768K方波输出，清除闹钟标志位
+// Start the timer, turn off the battery-powered square wave enable, force the temperature conversion to start,
+// the SQW pin outputs a 1Hz square wave, and turn off the alarm clock interrupt enable 
+#define	Status_default		0x00	// Turn off the 32.768K square wave output and clear the alarm flag 
 
 TIME_RTC Read_RTC();
 
@@ -60,3 +61,4 @@ void set_dayofweekday(uint8_t dayofweek);
 void set_dayofmouth(uint8_t dayofmouth);
 void set_month(uint8_t mouth);
 #endif //PICO_EXAMPLES_DS3231_H
+
