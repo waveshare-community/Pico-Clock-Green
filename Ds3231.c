@@ -235,11 +235,11 @@ void DS3231_REG_Read()
 void FormatTime_mode() {
     ByteData();
 
-    if ((DS3231_ReadReg[2] & 0x40) != 0) //判断12小时或24小时模式，bit6高位为12小时模式
+    if ((DS3231_ReadReg[2] & 0x40) != 0) // Determine 12-hour or 24-hour mode, bit6 high bit is 12-hour mode 
     {
         hourMode = true;
 
-        if ((DS3231_ReadReg[2] & 0x20) != 0) //判断AM/PM，bit5高位为PM
+        if ((DS3231_ReadReg[2] & 0x20) != 0) // Determine AM/PM, the high bit of bit5 is PM 
         {
             strcpy(stateOfTime, meridiem[1]);
         } else
