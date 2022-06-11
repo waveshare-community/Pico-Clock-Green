@@ -22,7 +22,7 @@ unsigned  char alarm_hour_temp = 0,alarm_min_temp = 0,alarm_hour_flag = 0,alarm_
 unsigned char Set_time_hour_flag = 0,Set_time_min_flag = 0,Set_time_year_flag = 0,Set_time_month_flag = 0,Set_time_dayofmonth_flag = 0,Set_hour_temp = 0,Set_min_temp = 0,change_time_flag = 0;
 unsigned char alarm_select_flag = 0,alarm_open_flag = 0,alarm_select_sta = 0,alarm_open_sta = 0,hour_temp,min_temp,year_temp,month_temp,dayofmonth_temp,year_high_temp = 20;//闹钟及时间
 unsigned char Min_count=0,alarm_star_flag = 0,Timing_show_count = 0,Timing_show_sec = 0;
-uint16_t KEY_cnt=0,UP_cnt=0,Exit_cnt = 0,Flashing_count = 0,whole_year,adc_count = 0,write_flag = 0;
+uint16_t KEY_cnts[]={0,0,0},Flashing_count = 0,whole_year,adc_count = 0,write_flag = 0;
 unsigned char Timing_mode_flag = 0,Timing_mode_sta = 2,Timing_min_flag = 0,Timing_sec_flag = 0,Timing_min_temp = 0,Timing_sec_temp = 0,Timing_DN_flag = 0,Timing_UP_Key_flag = 0,Timing_DN_close_flag = 0;//计时
 unsigned char Time_set_mode_flag = 0,Time_set_mode_sta = 0,Full_time_flag = 0,Full_time_sta = 0,Full_time_alarm_count = 5;//整点报时、时间模式
 char Time_buf[4];
@@ -190,165 +190,150 @@ bool repeating_timer_callback_us(struct repeating_timer *t) //us
 
 
 bool repeating_timer_callback_ms(struct repeating_timer *t) { //1ms进入一次
-    unsigned char i;
+    unsigned char keys[]={      SET_FUNCTION,       UP,       DOWN};
+    enum keys_index      {INDEX_SET_FUNCTION, INDEX_UP, INDEX_DOWN};
+    unsigned char key, i;
 	adc_show_count(); 
     beep_stop_judge();
     Flashing_start_judge(); 
     scroll_show_judge();
-    if(gpio_get(SET_FUNCTION) == 0) //检测设置按钮是否被按下
-    {
-        KEY_cnt++;
-    }
-    else
-    {
-        if(KEY_cnt>50&&KEY_cnt < 300)//少于300ms判断为短按,设置键短按为模式切换
-        {
-            KEY_cnt = 0;
-            if(alarm_id == 1)
-                alarm_flag = 1;    //进入闹钟设置模式
-            else if(UP_id ==1)
-                UP_Key_flag = 1;  //进入计时设置模式
-            else
-                KEY_Set_flag = 1; //进入普通设置模式 （外部时钟设置、按键声音开关设置、滚动开关设置、时钟显示模式设置）
-            beep_start_judge();
-            EXIT();
-            set_id++;	
-        }
-        else if(KEY_cnt >300&&set_id == 0) //大于300ms判断为长按
-        {
-            if(set_id == 0)
-            {
-                set_id ++;
-                alarm_flag = 1;  //设置按键长按进入闹钟设置
-                alarm_id = 1;
-            }
-            KEY_cnt = 0;
-            beep_start_judge();
-        }
-        else KEY_cnt = 0;
-    }
-    if(gpio_get(UP) == 0) //+标号
-    {
-        UP_cnt++;
-    }
-    else
-    {
-        if(UP_cnt>50 && UP_cnt < 300)//少于300ms判断为短按,短按+、-键可以改变功能的状态
-        {
-            UP_cnt = 0;
-            No_operation_count = 0;
-            if(set_id == 0)
-            {
-                temp_sta = !temp_sta;
-                if(temp_sta == 0)
-                {
-                    dis_C_flag;
-                    dis_F_flag_close;
-                }
-                else
-                {
-                    dis_C_flag_close;
-                    dis_F_flag;
-                }
-            }
-            if(beep_flag == 1) //按键声音可设置标志位
-            {
-                beep_sta = !beep_sta;
-            }
-            
-            beep_start_judge();
-            if(scroll_flag == 1)//滚动开关可设置标志位
-            {
-                scroll_sta = !scroll_sta;
-                if(scroll_sta != 0)
-                {
-                    dis_move_open;
-                }
-                else
-                {
-                    dis_move_close;
-                }
-            }
-            Alarm_set(UP_flag);
-			Timing_set(UP_flag);
-			Time_set(UP_flag);
-            if(Full_time_flag == 1)
-            {
-                Full_time_sta = !Full_time_sta;
-            }
-        }
-        else if(UP_cnt >300&&set_id == 0) //大于300ms判断为长按
-        {
-            if(set_id == 0)
-            {
-                UP_Key_flag = 1;
-                UP_id = 1;
-                set_id ++ ;
-            }
-            UP_cnt = 0;
-            beep_start_judge();
-        }
 
-        else UP_cnt = 0;
-    }
-    if(gpio_get(DOWN) == 0) //-标号
-    {
-       Exit_cnt++;
-    }
-    else
-    {
-        if(Exit_cnt>0&&Exit_cnt< 300)//少于300ms判断为短按,短按+、-键可以改变功能的状态
+    for (key=0; key < sizeof(keys); key++) {
+        if(gpio_get(keys[key]) == 0) // Detect if the button is pressed
         {
-            No_operation_count = 0;
-            if(set_id == 0 )//自动亮度开关
+            KEY_cnts[key]++;
+        }
+        else
+        {
+            // If it is less than 300ms, it is judged as a short press,
+            if(KEY_cnts[key]>50&&KEY_cnts[key] < 300)
             {
-                adc_light_flag = !adc_light_flag;
-                if(adc_light_flag !=0)
-                {
-                    dis_Auto_light;
+                if(key == INDEX_SET_FUNCTION) {
+                    // the short press of the setting key is a mode switch
+                    if(alarm_id == 1)
+                        alarm_flag = 1;    // Enter the alarm setting mode
+                    else if(UP_id ==1)
+                        UP_Key_flag = 1;  // Enter timing setting mode
+                    else
+                        // Enter the normal setting mode (external clock setting, key sound switch setting,s
+                        // scroll switch setting, clock display mode setting)
+                        KEY_Set_flag = 1;
+                    EXIT();
+                    set_id++;
                 }
-                else
-                {
-                    dis_Auto_light_close;
+                if(key == INDEX_UP) {
+                    // Short press the + and - keys to change the state of the function. 
+                    No_operation_count = 0;
+                    if(set_id == 0)
+                    {
+                        temp_sta = !temp_sta;
+                        if(temp_sta == 0)
+                        {
+                            dis_C_flag;
+                            dis_F_flag_close;
+                        }
+                        else
+                        {
+                            dis_C_flag_close;
+                            dis_F_flag;
+                        }
+                    }
+                    if(beep_flag == 1) // The key sound can set the flag bit 
+                    {
+                        beep_sta = !beep_sta;
+                    }
+                    if(scroll_flag == 1)// Scroll switch to set flag bit 
+                    {
+                        scroll_sta = !scroll_sta;
+                        if(scroll_sta != 0)
+                        {
+                            dis_move_open;
+                        }
+                        else
+                        {
+                            dis_move_close;
+                        }
+                    }
+                    Alarm_set(UP_flag);
+                    Timing_set(UP_flag);
+                    Time_set(UP_flag);
+                    if(Full_time_flag == 1)
+                    {
+                        Full_time_sta = !Full_time_sta;
+                    }
                 }
-            }
-            if(beep_flag == 1)//按键声音可设置标志位
-            {
+                if(key == INDEX_DOWN) {
+                    // Short press the + and - keys to change the state of the function
+                    No_operation_count = 0;
+                    if(set_id == 0 ) // Auto brightness switch
+                    {
+                        adc_light_flag = !adc_light_flag;
+                        if(adc_light_flag !=0)
+                        {
+                            dis_Auto_light;
+                        }
+                        else
+                        {
+                            dis_Auto_light_close;
+                        }
+                    }
+                    if(beep_flag == 1) // The key sound can set the flag bit
+                    {
 
-                beep_sta = !beep_sta;
-            }
-            beep_start_judge();
-            if(scroll_flag == 1)//滚动开关可设置标志位
-            {
-                scroll_sta = !scroll_sta;
-                if(scroll_sta != 0)
-                {
-                    dis_move_open;
+                        beep_sta = !beep_sta;
+                    }
+                    if(scroll_flag == 1) // The scroll switch can set the flag bit
+                    {
+                        scroll_sta = !scroll_sta;
+                        if(scroll_sta != 0)
+                        {
+                            dis_move_open;
+                        }
+                        else
+                        {
+                            dis_move_close;
+                        }
+                    }
+                    if(Full_time_flag == 1)
+                    {
+                        Full_time_sta = !Full_time_sta;
+                    }
+                    Alarm_set(DOWN_flag);
+                    Timing_set(DOWN_flag);
+                    Time_set(DOWN_flag);
                 }
-                else
-                {
-                    dis_move_close;
-                }
+                beep_start_judge();
+                KEY_cnts[key] = 0;
             }
-            if(Full_time_flag == 1)
+            else if(KEY_cnts[key] >300) // If it is greater than 300ms, it is judged as a long press
             {
-                Full_time_sta = !Full_time_sta;
+                if(key == INDEX_SET_FUNCTION) {
+                    if(set_id == 0)
+                    {
+                        set_id ++;
+                        alarm_flag = 1;  // Long press the setting button to enter the alarm setting
+                        alarm_id = 1;
+                    }
+                }
+                if(key == INDEX_UP) {
+                    if(set_id == 0)
+                    {
+                        UP_Key_flag = 1;
+                        UP_id = 1;
+                        set_id ++ ;
+                    }
+                }
+                if(key == INDEX_DOWN) {
+                    Special_Exit();
+                    //alarm_day_select_flag = 0;
+                    EXIT();
+                    set_id = 0;
+                }
+                beep_start_judge();
+                KEY_cnts[key] = 0;
             }
-			Alarm_set(DOWN_flag);
-			Timing_set(DOWN_flag);
-			Time_set(DOWN_flag);
-            Exit_cnt = 0;
+            else KEY_cnts[key] = 0;
         }
-        else if(Exit_cnt >300&&set_id != 0) //大于300ms判断为长按 ,任何设置模式下,可以退出设置模式
-        {
-            beep_start_judge();
-            Special_Exit();
-            //alarm_day_select_flag = 0;
-            EXIT();
-			set_id = 0;
-            Exit_cnt = 0;
-        }
-        else  Exit_cnt = 0;
     }
     CS_cnt++;
     if(CS_cnt>7)
