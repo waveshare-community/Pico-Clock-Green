@@ -22,7 +22,7 @@ unsigned  char alarm_hour_temp = 0,alarm_min_temp = 0,alarm_hour_flag = 0,alarm_
 unsigned char Set_time_hour_flag = 0,Set_time_min_flag = 0,Set_time_year_flag = 0,Set_time_month_flag = 0,Set_time_dayofmonth_flag = 0,Set_hour_temp = 0,Set_min_temp = 0,change_time_flag = 0;
 unsigned char alarm_select_flag = 0,alarm_open_flag = 0,alarm_select_sta = 0,alarm_open_sta = 0,hour_temp,min_temp,year_temp,month_temp,dayofmonth_temp,year_high_temp = 20;//闹钟及时间
 unsigned char Min_count=0,alarm_star_flag = 0,Timing_show_count = 0,Timing_show_sec = 0;
-uint16_t KEY_cnts[]={0,0,0},UP_cnt=0,Exit_cnt = 0,Flashing_count = 0,whole_year,adc_count = 0,write_flag = 0;
+uint16_t KEY_cnts[]={0,0,0},Exit_cnt = 0,Flashing_count = 0,whole_year,adc_count = 0,write_flag = 0;
 unsigned char Timing_mode_flag = 0,Timing_mode_sta = 2,Timing_min_flag = 0,Timing_sec_flag = 0,Timing_min_temp = 0,Timing_sec_temp = 0,Timing_DN_flag = 0,Timing_UP_Key_flag = 0,Timing_DN_close_flag = 0;//计时
 unsigned char Time_set_mode_flag = 0,Time_set_mode_sta = 0,Full_time_flag = 0,Full_time_sta = 0,Full_time_alarm_count = 5;//整点报时、时间模式
 char Time_buf[4];
@@ -221,6 +221,47 @@ bool repeating_timer_callback_ms(struct repeating_timer *t) { //1ms进入一次
                     EXIT();
                     set_id++;
                 }
+                if(key == INDEX_UP) {
+                    // Short press the + and - keys to change the state of the function. 
+                    No_operation_count = 0;
+                    if(set_id == 0)
+                    {
+                        temp_sta = !temp_sta;
+                        if(temp_sta == 0)
+                        {
+                            dis_C_flag;
+                            dis_F_flag_close;
+                        }
+                        else
+                        {
+                            dis_C_flag_close;
+                            dis_F_flag;
+                        }
+                    }
+                    if(beep_flag == 1) // The key sound can set the flag bit 
+                    {
+                        beep_sta = !beep_sta;
+                    }
+                    if(scroll_flag == 1)// Scroll switch to set flag bit 
+                    {
+                        scroll_sta = !scroll_sta;
+                        if(scroll_sta != 0)
+                        {
+                            dis_move_open;
+                        }
+                        else
+                        {
+                            dis_move_close;
+                        }
+                    }
+                    Alarm_set(UP_flag);
+                    Timing_set(UP_flag);
+                    Time_set(UP_flag);
+                    if(Full_time_flag == 1)
+                    {
+                        Full_time_sta = !Full_time_sta;
+                    }
+                }
             }
             else if(KEY_cnts[key] >300) // If it is greater than 300ms, it is judged as a long press
             {
@@ -232,74 +273,18 @@ bool repeating_timer_callback_ms(struct repeating_timer *t) { //1ms进入一次
                         alarm_id = 1;
                     }
                 }
+                if(key == INDEX_UP) {
+                    if(set_id == 0)
+                    {
+                        UP_Key_flag = 1;
+                        UP_id = 1;
+                        set_id ++ ;
+                    }
+                }
                 beep_start_judge();
             }
             KEY_cnts[key] = 0;
         }
-    }
-    if(gpio_get(UP) == 0) //+标号
-    {
-        UP_cnt++;
-    }
-    else
-    {
-        if(UP_cnt>50 && UP_cnt < 300)//少于300ms判断为短按,短按+、-键可以改变功能的状态
-        {
-            UP_cnt = 0;
-            No_operation_count = 0;
-            if(set_id == 0)
-            {
-                temp_sta = !temp_sta;
-                if(temp_sta == 0)
-                {
-                    dis_C_flag;
-                    dis_F_flag_close;
-                }
-                else
-                {
-                    dis_C_flag_close;
-                    dis_F_flag;
-                }
-            }
-            if(beep_flag == 1) //按键声音可设置标志位
-            {
-                beep_sta = !beep_sta;
-            }
-            
-            beep_start_judge();
-            if(scroll_flag == 1)//滚动开关可设置标志位
-            {
-                scroll_sta = !scroll_sta;
-                if(scroll_sta != 0)
-                {
-                    dis_move_open;
-                }
-                else
-                {
-                    dis_move_close;
-                }
-            }
-            Alarm_set(UP_flag);
-			Timing_set(UP_flag);
-			Time_set(UP_flag);
-            if(Full_time_flag == 1)
-            {
-                Full_time_sta = !Full_time_sta;
-            }
-        }
-        else if(UP_cnt >300&&set_id == 0) //大于300ms判断为长按
-        {
-            if(set_id == 0)
-            {
-                UP_Key_flag = 1;
-                UP_id = 1;
-                set_id ++ ;
-            }
-            UP_cnt = 0;
-            beep_start_judge();
-        }
-
-        else UP_cnt = 0;
     }
     if(gpio_get(DOWN) == 0) //-标号
     {
