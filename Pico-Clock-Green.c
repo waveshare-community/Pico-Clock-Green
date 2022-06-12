@@ -22,7 +22,7 @@ unsigned  char alarm_hour_temp = 0,alarm_min_temp = 0,alarm_hour_flag = 0,alarm_
 unsigned char Set_time_hour_flag = 0,Set_time_min_flag = 0,Set_time_year_flag = 0,Set_time_month_flag = 0,Set_time_dayofmonth_flag = 0,Set_hour_temp = 0,Set_min_temp = 0,change_time_flag = 0;
 unsigned char alarm_select_flag = 0,alarm_open_flag = 0,alarm_select_sta = 0,alarm_open_sta = 0,hour_temp,min_temp,year_temp,month_temp,dayofmonth_temp,year_high_temp = 20;//闹钟及时间
 unsigned char Min_count=0,alarm_star_flag = 0,Timing_show_count = 0,Timing_show_sec = 0;
-uint16_t KEY_cnt=0,UP_cnt=0,Exit_cnt = 0,Flashing_count = 0,whole_year,adc_count = 0,write_flag = 0;
+uint16_t KEY_cnts[]={0,0,0},KEY_cnt=0,UP_cnt=0,Exit_cnt = 0,Flashing_count = 0,whole_year,adc_count = 0,write_flag = 0;
 unsigned char Timing_mode_flag = 0,Timing_mode_sta = 2,Timing_min_flag = 0,Timing_sec_flag = 0,Timing_min_temp = 0,Timing_sec_temp = 0,Timing_DN_flag = 0,Timing_UP_Key_flag = 0,Timing_DN_close_flag = 0;//计时
 unsigned char Time_set_mode_flag = 0,Time_set_mode_sta = 0,Full_time_flag = 0,Full_time_sta = 0,Full_time_alarm_count = 5;//整点报时、时间模式
 char Time_buf[4];
@@ -190,11 +190,31 @@ bool repeating_timer_callback_us(struct repeating_timer *t) //us
 
 
 bool repeating_timer_callback_ms(struct repeating_timer *t) { //1ms进入一次
-    unsigned char i;
+    unsigned char keys[]={      SET_FUNCTION,       UP,       DOWN};
+    enum keys_index      {INDEX_SET_FUNCTION, INDEX_UP, INDEX_DOWN};
+    unsigned char key, i;
 	adc_show_count(); 
     beep_stop_judge();
     Flashing_start_judge(); 
     scroll_show_judge();
+
+    for (key=0; key < sizeof(keys); key++) {
+        if(gpio_get(keys[key]) == 0) // Detect if the button is pressed
+        {
+            KEY_cnts[key]++;
+        }
+        else
+        {
+            // If it is less than 300ms, it is judged as a short press,
+            if(KEY_cnts[key]>50&&KEY_cnts[key] < 300)
+            {
+            }
+            else if(KEY_cnts[key] >300) // If it is greater than 300ms, it is judged as a long press
+            {
+            }
+            KEY_cnts[key] = 0;
+        }
+    }
     if(gpio_get(SET_FUNCTION) == 0) //检测设置按钮是否被按下
     {
         KEY_cnt++;
